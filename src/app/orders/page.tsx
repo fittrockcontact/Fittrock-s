@@ -20,11 +20,24 @@ import { SalesHeader } from '@/components/layout/SalesHeader';
 import { AcceptOrderModal } from '@/components/orders/AcceptOrderModal';
 import { ShipOrderModal } from '@/components/orders/ShipOrderModal';
 import { apiFetch } from '@/lib/api-client';
-import { formatINR, formatDateTime } from '@/lib/utils';
+import { formatINR, formatOrderINR, formatDateTime } from '@/lib/utils';
 
 export default function OrdersFulfillmentPage() {
   const [orders, setOrders] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'pending_acceptance' | 'ready_to_ship' | 'shipped' | 'delivered' | 'all'>('pending_acceptance');
+  const [activeTab, setActiveTab] = useState<'pending_acceptance' | 'ready_to_ship' | 'shipped' | 'delivered' | 'all'>('ready_to_ship');
+  const [counts, setCounts] = useState<{
+    pending_acceptance: number;
+    ready_to_ship: number;
+    shipped: number;
+    delivered: number;
+    all: number;
+  }>({
+    pending_acceptance: 0,
+    ready_to_ship: 0,
+    shipped: 0,
+    delivered: 0,
+    all: 0,
+  });
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,11 +52,21 @@ export default function OrdersFulfillmentPage() {
       if (activeTab !== 'all') params.set('status', activeTab);
       if (search.trim()) params.set('search', search.trim());
 
-      const res = await apiFetch<{ success: boolean; orders: any[] }>(
-        `/api/sales/orders?${params.toString()}`
-      );
+      const res = await apiFetch<{
+        success: boolean;
+        orders: any[];
+        counts?: {
+          pending_acceptance: number;
+          ready_to_ship: number;
+          shipped: number;
+          delivered: number;
+          all: number;
+        };
+      }>(`/api/sales/orders?${params.toString()}`);
+
       if (res.success) {
         setOrders(res.orders || []);
+        if (res.counts) setCounts(res.counts);
       }
     } catch (err: any) {
       toast.error('Failed to load orders');
@@ -69,11 +92,11 @@ export default function OrdersFulfillmentPage() {
           {/* Status Tabs */}
           <div className="flex flex-wrap items-center gap-1.5 p-1 bg-zinc-900 rounded-xl border border-zinc-800">
             {[
-              { id: 'pending_acceptance', label: 'Needs Acceptance', icon: Clock },
-              { id: 'ready_to_ship', label: 'Ready to Ship', icon: PackageCheck },
-              { id: 'shipped', label: 'In Transit / Dispatched', icon: Truck },
-              { id: 'delivered', label: 'Delivered', icon: CheckCircle },
-              { id: 'all', label: 'All Orders', icon: PackageCheck },
+              { id: 'pending_acceptance', label: 'Needs Acceptance', icon: Clock, count: counts.pending_acceptance },
+              { id: 'ready_to_ship', label: 'Ready to Ship', icon: PackageCheck, count: counts.ready_to_ship },
+              { id: 'shipped', label: 'In Transit / Dispatched', icon: Truck, count: counts.shipped },
+              { id: 'delivered', label: 'Delivered', icon: CheckCircle, count: counts.delivered },
+              { id: 'all', label: 'All Orders', icon: PackageCheck, count: counts.all },
             ].map((tab) => {
               const Icon = tab.icon;
               const isSelected = activeTab === tab.id;
@@ -89,6 +112,15 @@ export default function OrdersFulfillmentPage() {
                 >
                   <Icon className="w-3.5 h-3.5" />
                   <span>{tab.label}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                      isSelected
+                        ? 'bg-emerald-500/30 text-emerald-300'
+                        : 'bg-zinc-800 text-zinc-400'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
                 </button>
               );
             })}
@@ -125,12 +157,20 @@ export default function OrdersFulfillmentPage() {
             <span>Loading orders...</span>
           </div>
         ) : orders.length === 0 ? (
-          <div className="p-16 text-center border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/40">
-            <PackageCheck className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+          <div className="p-16 text-center border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/40 space-y-3">
+            <PackageCheck className="w-10 h-10 text-zinc-600 mx-auto" />
             <p className="text-sm font-semibold text-zinc-300">No orders in this view</p>
-            <p className="text-xs text-zinc-500 mt-1">
-              Select another status tab or search with a different keyword
+            <p className="text-xs text-zinc-500">
+              There are currently no orders in the &ldquo;{activeTab.replace(/_/g, ' ')}&rdquo; status.
             </p>
+            {activeTab !== 'all' && counts.all > 0 && (
+              <button
+                onClick={() => setActiveTab('all')}
+                className="mt-2 px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>View All Orders ({counts.all})</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
@@ -172,12 +212,12 @@ export default function OrdersFulfillmentPage() {
                       <div className="text-right">
                         <span className="text-[10px] text-zinc-500 block">Total Amount</span>
                         <span className="font-mono font-bold text-sm text-emerald-400">
-                          {formatINR(ord.total_amount || ord.totalAmount)}
+                          {formatOrderINR(ord.total_amount || ord.totalAmount)}
                         </span>
                       </div>
 
                       {/* Action Buttons depending on status */}
-                      {['pending', 'pending_approval'].includes(ord.status) && (
+                      {ord.status === 'pending' && (
                         <button
                           onClick={() => setActiveAcceptOrder(ord)}
                           className="px-4 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all cursor-pointer"
@@ -186,7 +226,7 @@ export default function OrdersFulfillmentPage() {
                         </button>
                       )}
 
-                      {['confirmed', 'processing', 'paid'].includes(ord.status) && (
+                      {['confirmed', 'processing'].includes(ord.status) && (
                         <button
                           onClick={() => setActiveShipOrder(ord)}
                           className="px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
@@ -289,7 +329,7 @@ export default function OrdersFulfillmentPage() {
                             )}
                             <span className="font-mono text-zinc-400">x{item.quantity}</span>
                             <span className="font-mono font-semibold text-emerald-400">
-                              {formatINR(item.line_total)}
+                              {formatOrderINR(item.line_total)}
                             </span>
                           </div>
                         ))}

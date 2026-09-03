@@ -15,6 +15,20 @@ export function formatINR(amount: number | string | null | undefined): string {
   }).format(num);
 }
 
+export function formatOrderINR(amount: number | string | null | undefined): string {
+  if (amount === null || amount === undefined || isNaN(Number(amount))) return '₹0';
+  let num = Number(amount);
+  // Storefront & database orders are persisted in paise (e.g. 4198000 paise = ₹41,980)
+  if (num >= 10000) {
+    num = num / 100;
+  }
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(num);
+}
+
 export function formatDate(dateInput: string | Date | null | undefined): string {
   if (!dateInput) return '-';
   const d = new Date(dateInput);

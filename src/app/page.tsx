@@ -25,7 +25,7 @@ import { NewLeadModal } from '@/components/leads/NewLeadModal';
 import { AcceptOrderModal } from '@/components/orders/AcceptOrderModal';
 import { ShipOrderModal } from '@/components/orders/ShipOrderModal';
 import { apiFetch } from '@/lib/api-client';
-import { formatINR, formatDateTime, getPriorityBadge } from '@/lib/utils';
+import { formatINR, formatOrderINR, formatDateTime, getPriorityBadge } from '@/lib/utils';
 import { generateWhatsAppMessage, getWhatsAppDirectUrl } from '@/lib/whatsapp';
 
 export default function TodayCockpitPage() {
@@ -381,7 +381,7 @@ export default function TodayCockpitPage() {
                           <div className="flex items-center gap-2">
                             <span className="font-mono font-bold text-xs text-zinc-100">{orderNum}</span>
                             <span className="font-mono font-bold text-xs text-emerald-400">
-                              {formatINR(total)}
+                              {formatOrderINR(total)}
                             </span>
                           </div>
                           <div className="text-[11px] text-zinc-400 mt-0.5">
