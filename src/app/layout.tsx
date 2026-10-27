@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { SalesSidebar } from '@/components/layout/SalesSidebar';
 import { Toaster } from 'sonner';
+import { AuthProvider } from '@/lib/firebase/auth-context';
+import { SalesAuthGuard } from '@/components/layout/SalesAuthGuard';
 
 export const metadata: Metadata = {
   title: 'Fittrock Sales Cockpit & CRM',
@@ -17,10 +19,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="bg-[#090a0f] text-zinc-100 flex min-h-screen">
-        <SalesSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <main className="flex-1 overflow-y-auto">{children}</main>
-        </div>
+        <AuthProvider>
+          <SalesAuthGuard>
+            <SalesSidebar />
+            <div className="flex-1 flex flex-col min-w-0">
+              <main className="flex-1 overflow-y-auto">{children}</main>
+            </div>
+          </SalesAuthGuard>
+        </AuthProvider>
         <Toaster position="top-right" richColors theme="dark" />
       </body>
     </html>

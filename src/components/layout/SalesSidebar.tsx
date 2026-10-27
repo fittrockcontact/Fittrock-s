@@ -12,7 +12,9 @@ import {
   PhoneCall,
   Sparkles,
   TrendingUp,
+  LogOut,
 } from 'lucide-react';
+import { useAuth } from '@/lib/firebase/auth-context';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -32,6 +34,7 @@ const navItems: NavItem[] = [
 
 export function SalesSidebar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   return (
     <aside className="w-64 border-r border-zinc-800/80 bg-[#0d0f17] flex flex-col h-screen sticky top-0 shrink-0 select-none">
@@ -116,13 +119,21 @@ export function SalesSidebar() {
             SR
           </div>
           <div>
-            <p className="text-xs font-semibold text-zinc-200">Sales Desk</p>
+            <p className="text-xs font-semibold text-zinc-200 truncate max-w-[140px]">{user?.email || 'Sales Desk'}</p>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="text-[10px] text-zinc-500 font-mono">Backend Live</span>
             </div>
           </div>
         </div>
+        <button
+          onClick={() => logout()}
+          title="Sign out"
+          aria-label="Sign out"
+          className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </aside>
   );
