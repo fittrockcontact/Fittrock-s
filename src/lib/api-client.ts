@@ -4,6 +4,8 @@
  * ZERO direct database or Supabase credentials in this frontend workspace.
  */
 
+import { auth } from '@/lib/firebase/config';
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -14,8 +16,12 @@ export async function apiFetch<T>(
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${API_BASE_URL}${cleanEndpoint}`;
 
+  // Every sales endpoint requires the signed-in rep's Firebase ID token.
+  const token = await auth.currentUser?.getIdToken();
+
   const defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
   const config: RequestInit = {
